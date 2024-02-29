@@ -30,37 +30,42 @@ class Leveling(commands.Cog):
         if message.author.bot:
             return
         
-        guild_id = message.guild.id
-        user_id = message.author.id
+        data = collection.find_one({"_id": message.guild.id})
+        if not data:
+            collection.insert_one(
+                {"_id": message.guild.id, "user": message.author.id, "level": 0, "xp": 0}
+            )
 
-        try:
-            # Check if the guild entry exists
-            if not collection.count_documents({"_id": guild_id}):
-                collection.insert_one({"_id": guild_id})
+        BASE_EXP = 50
+        level = data["level"]
+        xp_required = BASE_EXP + ((level * 2) ** 2 * 10)
 
-            # Check if the user entry exists
-            data = collection.find_one({"_id": guild_id, "user": user_id})
-            if not data:
-                collection.update_one({"_id": guild_id}, {"$push": {"user": user_id}})
-                print(f"Added user {message.author.name} to the collection.")
+        random_xp = random.randint(1, 10)
 
-            data = collection.find_one({"_id": guild_id, "user": user_id})
-            BASE_EXP = 50
-            level = data["level"]
-            xp_required = BASE_EXP + ((level * 2) ** 2 * 10)
+        collection.update_one({"_id": message.guild.id, "user": message.author.id}, {"$inc": {"xp": random_xp}})
 
-            random_xp = random.randint(1, 10)
+        if data["xp"] >= xp_required:
+            collection.update_one({"_id": message.guild.id, "user": message.author.id}, {"$inc": {"level": 1, "xp": -xp_required}})
+            await message.channel.send(f"Congratulations {message.author.mention}, you leveled up to level {level + 1}!")
 
-            collection.update_one({"_id": guild_id, "user": user_id}, {"$inc": {"xp": random_xp}})
-            print(f"Gave {message.author.name} {random_xp}xp. Current XP: {data['xp'] + random_xp}")
+    @commands.command(name="rank", description="Shows the level of a user.")
+    async def rank(self, ctx, member: nextcord.Member = None):
+        if not member:
+            member = ctx.author
 
-            if data["xp"] >= xp_required:
-                collection.update_one({"_id": guild_id, "user": user_id}, {"$inc": {"level": 1, "xp": -xp_required}})
-                print(f"Level up! {message.author.name} leveled up to level {level + 1}. Remaining XP: {data['xp'] - xp_required}")
-                await message.channel.send(f"Congratulations {message.author.mention}, you leveled up to level {level + 1}!")
+        collection = db["Levels"]
 
-        except Exception as e:
-            print(f"An error occurred: {e}")
+        data = collection.find_one({"_id": ctx.guild.id, "user": member.id})
+        if not data:
+            await ctx.send(f"{member.name} hasn't sent any messages yet.")
+            return
+
+        BASE_XP = 50
+        xp = data["xp"]
+        level = data["level"]
+        xp_required = BASE_XP + ((level * 2) ** 2 * 10)
+
+        await ctx.send(f"{member.name} is on level {level} with {xp}/{xp_required} xp.")
 
 def setup(bot):
     bot.add_cog(Leveling(bot))
