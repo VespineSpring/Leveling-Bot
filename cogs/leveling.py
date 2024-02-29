@@ -36,6 +36,8 @@ class Leveling(commands.Cog):
                 {"_id": message.guild.id, "user": message.author.id, "level": 0, "xp": 0}
             )
 
+        data = collection.find_one({"_id": message.guild.id, "user": message.author.id})
+
         BASE_EXP = 50
         level = data["level"]
         xp_required = BASE_EXP + ((level * 2) ** 2 * 10)
