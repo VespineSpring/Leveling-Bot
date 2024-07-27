@@ -16,8 +16,6 @@ class Leveling(commands.Cog):
     """
     The formula which is going to be used for the leveling system is:
     XP = BaseXP + ((Current Level * 2)**2 * 10)
-    This formula is made by me so it is called the "Skele's Leveling Formula."
-    If you have made this formula so I am sorry for that. Because I didn't knew that this formula is already made.
     """
 
     def __init__(self, bot):
